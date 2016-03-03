@@ -49,13 +49,12 @@ class ServerListActor extends Actor with ActorLogging {
       } yield {
         val result = WeixinApiResult(serverListApiResultStr)
 
-        if (result.isSuccess) {
-          this.context.system.scheduler.scheduleOnce(1 day) {
-            self ! RefreshServerListCmd
-          }
-          result.convertServerList.ipList
-        } else
-          throw new Exception("无法获取服务器列表, 微信服务器返回: [" + serverListApiResultStr + "]")
+        assert(result.isSuccess, "无法获取服务器列表, 微信服务器返回: [" + serverListApiResultStr + "]")
+
+        this.context.system.scheduler.scheduleOnce(1 day) {
+          self ! RefreshServerListCmd
+        }
+        result.convertServerList.ipList
       }
 
       for (e <- _future.failed) log.error(e, "获取微信服务器列表错误")

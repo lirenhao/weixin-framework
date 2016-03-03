@@ -48,15 +48,14 @@ class AccessTokenActor extends Actor with ActorLogging {
     if (_future == null) {
       _future = for (tokenApiResultStr <- HttpGetUtil.doGet(accessTokenUrl, eventLoopGroup)) yield {
         val result = WeixinApiResult(tokenApiResultStr)
-        if (result.isSuccess) {
-          val tokenInfo = result.convertToToken
-          this.context.system.scheduler.scheduleOnce((tokenInfo.expiresIn - 10) second) {
-            self ! RefreshAccessTokenCmd
-          }
-          tokenInfo.accessToken
-        } else {
-          throw new Exception("无法获取访问令牌, 微信服务器返回: [" + tokenApiResultStr + "]")
+
+        assert(result.isSuccess, "无法获取访问令牌, 微信服务器返回: [" + tokenApiResultStr + "]")
+
+        val tokenInfo = result.convertToToken
+        this.context.system.scheduler.scheduleOnce((tokenInfo.expiresIn - 10) second) {
+          self ! RefreshAccessTokenCmd
         }
+        tokenInfo.accessToken
       }
 
       for (e <- _future.failed) log.error(e, "获取访问令牌错误")
