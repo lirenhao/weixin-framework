@@ -52,7 +52,11 @@ class AccessTokenActor extends Actor with ActorLogging {
         assert(result.isSuccess, "无法获取访问令牌, 微信服务器返回: [" + tokenApiResultStr + "]")
 
         val tokenInfo = result.convertToToken
-        this.context.system.scheduler.scheduleOnce((tokenInfo.expiresIn - 10) second) {
+
+        // 根据 http://mp.weixin.qq.com/wiki/7/c478375fae59150b26def82ec061f43b.html 上的说明：
+        // 公众平台会保证在access_token刷新后，旧的access_token在5分钟内仍能使用，以确保第三方在更新access_token时不会发生第三方调用微信api的失败
+        // 因此按照expiresIn定义的时间刷新
+        this.context.system.scheduler.scheduleOnce(tokenInfo.expiresIn second) {
           self ! RefreshAccessTokenCmd
         }
         tokenInfo.accessToken
