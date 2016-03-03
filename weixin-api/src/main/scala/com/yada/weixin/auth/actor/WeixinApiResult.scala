@@ -11,19 +11,23 @@ class WeixinApiResult(resultStr: String) {
   val isSuccess = resultStr.indexOf("errcode") == -1
 
   def convertToToken = {
-    assert(isSuccess)
-    assert(resultStr.indexOf("access_token") != -1)
+    assert(isSuccess,
+      "access token在成功时才能返回, 但是这个消息不是一个成功信息, 返回结果字符串为: [" + resultStr + "]")
+    assert(resultStr.indexOf("access_token") != -1,
+      "这个信息可能不是错误信息, 但是它不是access token信息: 返回结果字符串为: [" + resultStr + "]")
     Json.parse(resultStr).as[Token]
   }
 
   def convertServerList = {
-    assert(isSuccess)
-    assert(resultStr.indexOf("ip_list") != -1)
+    assert(isSuccess,
+      "server list在成功时才能返回, 但是这个消息不是一个成功信息, 返回结果字符串为: [" + resultStr + "]")
+    assert(resultStr.indexOf("ip_list") != -1,
+      "这个信息可能不是错误信息, 但是它不是server list信息: 返回结果字符串为: [" + resultStr + "]")
     Json.parse(resultStr).as[ServerList]
   }
 
   def convertToErrorMsg = {
-    assert(!isSuccess)
+    assert(!isSuccess, "这个信息可能不是错误信息: 返回结果字符串为: [" + resultStr + "]")
     Json.parse(resultStr).as[ErrorMsg]
   }
 }

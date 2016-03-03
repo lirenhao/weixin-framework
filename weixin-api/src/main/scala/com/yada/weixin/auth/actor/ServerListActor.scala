@@ -43,13 +43,19 @@ class ServerListActor extends Actor with ActorLogging {
   private def getEffectiveFuture = {
     if (_future == null || (_future.isCompleted && _future.value.get.isFailure)) {
       _future = for {
-        token <- AccessTokenActor.getAccessToken(5 second)
-        list <- HttpGetUtil.doGet(new URL(serverListUrl + "?access_token=" + token), eventLoopGroup)
+        tokenApiResultStr <- AccessTokenActor.getAccessToken(5 second)
+        serverListApiResultStr <- HttpGetUtil.doGet(
+          new URL(serverListUrl + "?access_token=" + tokenApiResultStr), eventLoopGroup)
       } yield {
-        this.context.system.scheduler.scheduleOnce(1 day) {
-          self ! RefreshServerListCmd
-        }
-        WeixinApiResult(list).convertServerList.ipList
+        val result = WeixinApiResult(serverListApiResultStr)
+
+        if (result.isSuccess) {
+          this.context.system.scheduler.scheduleOnce(1 day) {
+            self ! RefreshServerListCmd
+          }
+          result.convertServerList.ipList
+        } else
+          throw new Exception("无法获取服务器列表, 微信服务器返回: [" + serverListApiResultStr + "]")
       }
 
       for (e <- _future.failed) log.error(e, "获取微信服务器列表错误")
