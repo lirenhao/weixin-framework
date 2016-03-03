@@ -21,6 +21,7 @@ class WeixinApiResult(resultStr: String) {
     assert(resultStr.indexOf("ip_list") != -1)
     Json.parse(resultStr).as[ServerList]
   }
+
   def convertToErrorMsg = {
     assert(!isSuccess)
     Json.parse(resultStr).as[ErrorMsg]
@@ -51,18 +52,18 @@ object Token {
   //  implicit val tokenFormat: Format[Token] = Format(tokenReads, tokenWrites)
 }
 
-/***
+/** *
   * 当出现错误时, 返回的错误结果
   *
   * @param errcode 错误代码
-  * @param errmsg 错误信息
+  * @param errmsg  错误信息
   */
 case class ErrorMsg(errcode: Int, errmsg: String)
 
 object ErrorMsg {
   implicit val errorReads: Reads[ErrorMsg] = (
     (__ \ "errcode").read[Int] ~ (__ \ "errmsg").read[String]
-    )(ErrorMsg.apply _)
+    ) (ErrorMsg.apply _)
 }
 
 case class ServerList(ipList: List[String])

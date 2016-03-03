@@ -34,8 +34,8 @@ class AccessTokenActor extends Actor with ActorLogging {
     case GetAccessTokenCmd =>
       val s = sender()
       val f = getEffectiveFuture
-      for(accessToken <- f) s ! accessToken
-      for(e <- f.failed) s ! Status.Failure(e)
+      for (accessToken <- f) s ! accessToken
+      for (e <- f.failed) s ! Status.Failure(e)
     case RefreshAccessTokenCmd =>
       if (_future != null && _future.isCompleted || _future == null) {
         _future = null
@@ -46,7 +46,7 @@ class AccessTokenActor extends Actor with ActorLogging {
 
   def getEffectiveFuture = {
     if (_future == null) {
-      _future = for(resultStr <- HttpGetUtil.doGet(accessTokenUrl, eventLoopGroup)) yield {
+      _future = for (resultStr <- HttpGetUtil.doGet(accessTokenUrl, eventLoopGroup)) yield {
         val result = WeixinApiResult(resultStr).convertToToken
         this.context.system.scheduler.scheduleOnce((result.expiresIn - 10) second) {
           self ! RefreshAccessTokenCmd
