@@ -6,6 +6,7 @@ import io.netty.channel.socket.SocketChannel
 import io.netty.channel.socket.nio.NioServerSocketChannel
 import io.netty.channel.{ChannelInitializer, ChannelOption}
 import io.netty.handler.codec.http.{HttpObjectAggregator, HttpServerCodec}
+import io.netty.handler.logging.{LogLevel, LoggingHandler}
 
 /**
   * Created by cuitao-pc on 16/3/4.
@@ -13,7 +14,7 @@ import io.netty.handler.codec.http.{HttpObjectAggregator, HttpServerCodec}
 object WeixinCallbackServer {
 
   def start() = {
-    val port = 8080
+    val port = 80
     val ip = "0.0.0.0"
 
     val bossGroup = new NioEventLoopGroup(1)
@@ -27,6 +28,7 @@ object WeixinCallbackServer {
       .childHandler(new ChannelInitializer[SocketChannel] {
         override def initChannel(c: SocketChannel): Unit = {
           val pipeline = c.pipeline()
+          pipeline.addLast(new LoggingHandler(LogLevel.INFO))
           pipeline.addLast(new HttpServerCodec())
             .addLast(new HttpObjectAggregator(1024 * 1024))
             .addLast(new WeixinChannelHandler)
