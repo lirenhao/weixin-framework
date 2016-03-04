@@ -8,6 +8,7 @@ import io.netty.channel.socket.SocketChannel
 import io.netty.channel._
 import io.netty.channel.socket.nio.NioSocketChannel
 import io.netty.handler.codec.http._
+import io.netty.handler.logging.{LogLevel, LoggingHandler}
 import io.netty.handler.ssl.SslContextBuilder
 
 import scala.concurrent.Promise
@@ -29,7 +30,7 @@ object HttpGetUtil {
           val pipeline = ch.pipeline()
           if (isSsl)
             pipeline.addLast(sslCtx.newHandler(ch.alloc()))
-
+          //pipeline.addLast(new LoggingHandler(LogLevel.INFO))
           pipeline.addLast(new HttpClientCodec).addLast(new HttpObjectAggregator(1024 * 1024))
             .addLast(new SimpleChannelInboundHandler[FullHttpMessage]() {
 

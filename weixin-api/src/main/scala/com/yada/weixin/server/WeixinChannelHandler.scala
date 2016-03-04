@@ -37,10 +37,18 @@ class WeixinChannelHandler extends SimpleChannelInboundHandler[FullHttpRequest] 
           val tmp = Hex.encodeHexString(digest.digest())
           if (tmp == signature) {
             val response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK, Unpooled.wrappedBuffer(echostr.getBytes))
+            response.headers().add(HttpHeaders.Names.CONTENT_LENGTH, response.content().readableBytes())
+            response.headers().add(HttpHeaders.Names.CONTENT_TYPE, "text/plain; encoding=utf-8")
+            if(HttpHeaders.isKeepAlive(i))
+              response.headers().add(HttpHeaders.Names.CONNECTION, HttpHeaders.Values.KEEP_ALIVE)
             channelHandlerContext.writeAndFlush(response)
           } else channelHandlerContext.close()
         }
-      }.failed.foreach(e => channelHandlerContext.close())
+      }.failed.foreach{
+        e =>
+          e.printStackTrace()
+          channelHandlerContext.close()
+      }
     } else
       channelHandlerContext.close()
   }
