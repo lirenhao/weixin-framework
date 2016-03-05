@@ -14,6 +14,10 @@ import io.netty.handler.ssl.SslContextBuilder
 import scala.concurrent.Promise
 import scala.util.Try
 
+// TODO: 优化对于 keep alive
+/**
+  * Created by cuitao on 16/3/4.
+  */
 object HttpGetUtil {
   private val sslCtx = SslContextBuilder.forClient().build()
 

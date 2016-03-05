@@ -5,7 +5,7 @@ import play.api.libs.json.Reads._
 import play.api.libs.json._
 
 /**
-  * Created by cuitao-pc on 16/3/3.
+  * Created by cuitao on 16/3/3.
   */
 class WeixinApiResult(resultStr: String) {
   val isSuccess = resultStr.indexOf("errcode") == -1

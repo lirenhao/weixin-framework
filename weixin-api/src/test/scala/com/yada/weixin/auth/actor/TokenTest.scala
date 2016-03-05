@@ -3,6 +3,9 @@ package com.yada.weixin.auth.actor
 import org.scalatest.FunSuite
 import play.api.libs.json.Json
 
+/**
+  * Created by cuitao on 16/3/4.
+  */
 class TokenTest extends FunSuite {
 //  test("serialization test") {
 //    val tokenTest = Token(

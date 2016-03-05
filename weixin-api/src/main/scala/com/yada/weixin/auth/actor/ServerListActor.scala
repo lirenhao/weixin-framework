@@ -20,6 +20,8 @@ object RefreshServerListCmd
 
 /** *
   * 获取微信服务器链表
+  *
+  * Created by cuitao on 16/3/4.
   */
 class ServerListActor extends Actor with ActorLogging {
   private val serverListUrl = {

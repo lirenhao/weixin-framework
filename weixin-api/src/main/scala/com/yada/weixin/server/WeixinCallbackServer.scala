@@ -9,7 +9,7 @@ import io.netty.handler.codec.http.{HttpObjectAggregator, HttpServerCodec}
 import io.netty.handler.logging.{LogLevel, LoggingHandler}
 
 /**
-  * Created by cuitao-pc on 16/3/4.
+  * Created by cuitao on 16/3/4.
   */
 object WeixinCallbackServer {
 

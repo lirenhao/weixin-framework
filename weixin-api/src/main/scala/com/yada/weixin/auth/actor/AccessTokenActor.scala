@@ -23,6 +23,7 @@ object RefreshAccessTokenCmd
   *
   * 用于获取微信的访问令牌
   *
+  * Created by cuitao on 16/3/4.
   */
 class AccessTokenActor extends Actor with ActorLogging {
   private val accessTokenUrl = {
