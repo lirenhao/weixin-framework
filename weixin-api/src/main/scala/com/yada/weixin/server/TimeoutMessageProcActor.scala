@@ -1,6 +1,6 @@
 package com.yada.weixin.server
 
-import akka.actor.{Props, Actor}
+import akka.actor.{Actor, Props}
 
 import scala.concurrent.Future
 
@@ -9,9 +9,9 @@ import scala.concurrent.Future
   */
 class TimeoutMessageProcActor extends Actor {
   override def receive: Receive = {
-    case f: Future[String] => f.foreach{
+    case f: Future[String] => f.foreach {
       msg =>
-        // 转到客服接口发送
+      // 转到客服接口发送
     }
   }
 }

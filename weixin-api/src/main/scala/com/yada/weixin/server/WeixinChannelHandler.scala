@@ -4,18 +4,18 @@ import java.net.URI
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
 
+import akka.pattern._
 import com.typesafe.config.ConfigFactory
+import com.yada.weixin._
 import io.netty.buffer.Unpooled
 import io.netty.channel.{ChannelFuture, ChannelFutureListener, ChannelHandlerContext, SimpleChannelInboundHandler}
 import io.netty.handler.codec.http._
 import org.apache.commons.codec.binary.Hex
 
 import scala.concurrent.Future
+import scala.concurrent.duration._
 import scala.language.postfixOps
 import scala.util.Try
-import akka.pattern._
-import com.yada.weixin._
-import scala.concurrent.duration._
 
 /**
   * Created by cuitao on 16/3/4.
@@ -57,7 +57,7 @@ class WeixinChannelHandler extends SimpleChannelInboundHandler[FullHttpRequest] 
           val timeoutF = after((5 - 1) second, using = actorSystem.scheduler)(Future.failed(new WeixinRequestTimeoutException))
           val resultF = Future.firstCompletedOf(Seq(procF, timeoutF))
           for (msg <- resultF) channelHandlerContext.writeAndFlush(makeResponse(msg, i))
-          resultF.onFailure{
+          resultF.onFailure {
             case e: WeixinRequestTimeoutException =>
               channelHandlerContext.writeAndFlush(makeResponse(msg, i)).addListener(new ChannelFutureListener {
                 override def operationComplete(future: ChannelFuture): Unit = {
