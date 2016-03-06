@@ -3,8 +3,8 @@ package com.yada.weixin.server
 import akka.actor.{Actor, Props}
 import akka.pattern._
 import akka.util.Timeout
+import com.yada.weixin.weixinExecutionContext
 
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.language.postfixOps

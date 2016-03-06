@@ -9,7 +9,6 @@ import com.typesafe.config.ConfigFactory
 import com.yada.comm.util.HttpGetUtil
 import com.yada.weixin._
 
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.language.postfixOps

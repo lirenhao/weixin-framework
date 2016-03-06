@@ -1,8 +1,8 @@
 package com.yada.weixin.server
 
 import akka.actor.{Actor, Props}
+import com.yada.weixin.weixinExecutionContext
 
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 /**
