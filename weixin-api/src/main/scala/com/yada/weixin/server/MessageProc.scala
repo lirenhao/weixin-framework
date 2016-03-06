@@ -15,6 +15,6 @@ trait MessageProc {
   def proc(msg: String): Future[String]
 }
 
-class SimplyMessageProc extends MessageProc {
-  override def proc(msg: String): Future[String] = Future("success")
+class SimpleMessageProc extends MessageProc {
+  override def proc(msg: String): Future[String] = Future.successful("success")
 }
