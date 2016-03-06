@@ -39,7 +39,7 @@ class WeixinChannelHandler extends SimpleChannelInboundHandler[FullHttpRequest] 
           val signature = queryParam("signature")
           val timestamp = queryParam("timestamp")
           val nonce = queryParam("nonce")
-          val echostr = queryParam("echostr")
+          val echoStr = queryParam("echostr")
           val signatureStr = List(token, timestamp, nonce).sorted.mkString("")
           val digest = MessageDigest.getInstance("SHA-1")
 
@@ -47,7 +47,7 @@ class WeixinChannelHandler extends SimpleChannelInboundHandler[FullHttpRequest] 
 
           val tmp = Hex.encodeHexString(digest.digest())
           if (tmp == signature)
-            channelHandlerContext.writeAndFlush(makeResponse(echostr, i))
+            channelHandlerContext.writeAndFlush(makeResponse(echoStr, i))
           else
             channelHandlerContext.close()
 
