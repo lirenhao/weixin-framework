@@ -12,6 +12,7 @@ import io.netty.channel.{ChannelFuture, ChannelFutureListener, ChannelHandlerCon
 import io.netty.handler.codec.http._
 import org.apache.commons.codec.binary.Hex
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.language.postfixOps
