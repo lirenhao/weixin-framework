@@ -59,7 +59,7 @@ class WeixinChannelHandler extends SimpleChannelInboundHandler[FullHttpRequest] 
           for (msg <- resultF) channelHandlerContext.writeAndFlush(makeResponse(msg, i))
           resultF.onFailure {
             case e: WeixinRequestTimeoutException =>
-              channelHandlerContext.writeAndFlush(makeResponse(msg, i)).addListener(new ChannelFutureListener {
+              channelHandlerContext.writeAndFlush(makeResponse("success", i)).addListener(new ChannelFutureListener {
                 override def operationComplete(future: ChannelFuture): Unit = {
                   if (future.isSuccess)
                     TimeoutMessageProcActor.procMsg(procF)
