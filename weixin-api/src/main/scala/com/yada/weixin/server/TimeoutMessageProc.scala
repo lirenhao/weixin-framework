@@ -10,5 +10,5 @@ trait TimeoutMessageProc {
 }
 
 class SimpleTimeoutMessageProc extends TimeoutMessageProc {
-  override def proc(msg: String): Future[Void] = Future.successful(Void)
+  override def proc(msg: String): Future[Unit] = Future.successful()
 }
