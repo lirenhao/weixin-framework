@@ -1,6 +1,6 @@
 package com.yada
 
-import java.util.concurrent.{ForkJoinPool, Executors}
+import java.util.concurrent.ForkJoinPool
 
 import akka.actor.ActorSystem
 import io.netty.channel.nio.NioEventLoopGroup
