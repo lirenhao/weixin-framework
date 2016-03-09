@@ -2,6 +2,7 @@ package com.yada.comm.util
 
 import java.net.{URI, URL}
 import java.nio.charset.{Charset, StandardCharsets}
+import java.util.concurrent.LinkedBlockingQueue
 
 import io.netty.bootstrap.Bootstrap
 import io.netty.buffer.Unpooled
@@ -12,6 +13,7 @@ import io.netty.handler.codec.http._
 import io.netty.handler.logging.{LogLevel, LoggingHandler}
 import io.netty.handler.ssl.SslContextBuilder
 
+import scala.Exception
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Future, Promise}
 import scala.util.Try
@@ -20,55 +22,15 @@ import scala.util.Try
   * Created by cuitao-pc on 16/3/8.
   */
 class HttpClient(eventLoopGroup: EventLoopGroup, url: URL) {
-  @volatile var _future: Future[String] = Future.successful("init")
-  @volatile var _promise: Promise[String] = null
-  @volatile var channel: Channel = null
 
   private val protocol = url.getProtocol
   assert(protocol == "http" || protocol == "https")
   private val isSsl = protocol == "https"
   private val sslCtx = SslContextBuilder.forClient().build()
 
-  def get(uri: URI): Future[String] = {
-    this.synchronized {
-      val p = Promise[String]
-      _future.onComplete {
-        case _ =>
-          ensure()
-          _promise = p
-          val request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, url.getFile)
-          request.headers().set(HttpHeaders.Names.HOST, url.getHost)
-          request.headers().add(HttpHeaders.Names.CONNECTION, HttpHeaders.Values.KEEP_ALIVE)
-          channel.writeAndFlush(request)
-      }
+  private var channel: Channel = null
 
-      _future = p.future
-      _future
-    }
-  }
-
-  def post(rul: URL, content: String): Future[String] = {
-    this.synchronized {
-      val p = Promise[String]
-      _future.onComplete {
-        case _ =>
-          ensure()
-          _promise = p
-          val request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.POST, url.getFile, Unpooled.copiedBuffer(content, StandardCharsets.UTF_8))
-          request.headers().set(HttpHeaders.Names.HOST, url.getHost)
-          request.headers().add(HttpHeaders.Names.CONTENT_TYPE, "text/plain; encoding=utf-8")
-          request.headers().add(HttpHeaders.Names.CONTENT_LENGTH, request.content().readableBytes())
-          request.headers().add(HttpHeaders.Names.CONNECTION, HttpHeaders.Values.KEEP_ALIVE)
-          channel.writeAndFlush(request)
-      }
-
-      _future = p.future
-      _future
-    }
-  }
-
-
-  def ensure(): Unit = {
+  private def ensure(): Unit = {
     if (channel == null || !channel.isOpen) {
       channel = new Bootstrap().group(eventLoopGroup)
         .channel(classOf[NioSocketChannel])
@@ -79,32 +41,39 @@ class HttpClient(eventLoopGroup: EventLoopGroup, url: URL) {
               pipeline.addLast(sslCtx.newHandler(ch.alloc()))
             //pipeline.addLast(new LoggingHandler(LogLevel.INFO))
             pipeline.addLast(new HttpClientCodec).addLast(new HttpObjectAggregator(1024 * 1024))
-              .addLast(new SimpleChannelInboundHandler[FullHttpMessage]() {
+              .addLast(new ChannelDuplexHandler {
 
-                override def exceptionCaught(ctx: ChannelHandlerContext, cause: Throwable): Unit = {
-                  _promise.failure(cause)
-                }
+                private val queue = new LinkedBlockingQueue[Promise[String]]()
 
-                override def channelActive(ctx: ChannelHandlerContext): Unit = {
-                  val request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, url.getFile)
-                  request.headers().set(HttpHeaders.Names.HOST, url.getHost)
-                  ctx.writeAndFlush(request)
-                }
+                override def channelRead(ctx: ChannelHandlerContext, message: Object): Unit = {
+                  message match {
+                    case msg: FullHttpResponse =>
+                      val promise = queue.poll()
+                      val contentType = msg.headers().get(HttpHeaders.Names.CONTENT_TYPE)
+                      val pattern = """.*?encoding\s*=\s*(.*[^;\s]).*""".r
 
-                override def channelRead0(ctx: ChannelHandlerContext, msg: FullHttpMessage): Unit = {
-                  val contentType = msg.headers().get(HttpHeaders.Names.CONTENT_TYPE)
-                  val pattern = """.*?encoding\s*=\s*(.*[^;\s]).*""".r
+                      val encoding = contentType match {
+                        case pattern(enc) => Try(Charset.forName(enc)).getOrElse(StandardCharsets.UTF_8)
+                        case _ => StandardCharsets.UTF_8
+                      }
 
-                  val encoding = contentType match {
-                    case pattern(enc) => Try(Charset.forName(enc)).getOrElse(StandardCharsets.UTF_8)
-                    case _ => StandardCharsets.UTF_8
+                      val str = msg.content().toString(encoding)
+
+                      if (msg.getStatus == HttpResponseStatus.OK)
+                        promise.success(str)
+                      else
+                        promise.failure(new Exception(msg.getStatus + ":" + str))
+
+                      if (!HttpHeaders.isKeepAlive(msg))
+                        ctx.close()
+                    case _ =>
                   }
+                }
 
-                  println("-----------")
-                  println(msg.content().toString(encoding))
-                  //_promise.success(msg.content().toString(encoding))
-                  if (!HttpHeaders.isKeepAlive(msg))
-                    ctx.close()
+                override def write(ctx: ChannelHandlerContext, msg: scala.Any, promise: ChannelPromise): Unit = {
+                  val p = Promise[String]
+                  queue.put(p)
+                  super.write(ctx, msg, promise)
                 }
               })
           }

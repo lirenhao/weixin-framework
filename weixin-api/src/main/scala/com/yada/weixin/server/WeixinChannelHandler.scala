@@ -23,6 +23,7 @@ import scala.util.Try
 class WeixinChannelHandler extends SimpleChannelInboundHandler[FullHttpRequest] {
   private val token = ConfigFactory.load().getString("weixin.token")
   private val callbackPath = ConfigFactory.load().getString("weixin.callbackPath")
+  private var _f = Future.successful[Any]()
 
   // TODO: 注释 异常的response处理 log
   override def channelRead0(channelHandlerContext: ChannelHandlerContext, i: FullHttpRequest): Unit = {
@@ -56,8 +57,10 @@ class WeixinChannelHandler extends SimpleChannelInboundHandler[FullHttpRequest] 
           val procF = MessageProcActor.procMsg(msg)
           val timeoutF = after((5 - 1) second, using = actorSystem.scheduler)(Future.failed(new WeixinRequestTimeoutException))
           val resultF = Future.firstCompletedOf(Seq(procF, timeoutF))
-          for (msg <- resultF) channelHandlerContext.writeAndFlush(makeResponse(msg, i))
-          resultF.onFailure {
+
+          val tf = for {_ <- _f; msg <- resultF} yield channelHandlerContext.writeAndFlush(makeResponse(msg, i))
+
+          _f = tf.recover {
             case e: WeixinRequestTimeoutException =>
               channelHandlerContext.writeAndFlush(makeResponse("success", i)).addListener(new ChannelFutureListener {
                 override def operationComplete(future: ChannelFuture): Unit = {
@@ -65,7 +68,8 @@ class WeixinChannelHandler extends SimpleChannelInboundHandler[FullHttpRequest] 
                     TimeoutMessageProcActor.procMsg(procF)
                 }
               })
-            case e => e.printStackTrace(); channelHandlerContext.close()
+            case e: Throwable =>
+              channelHandlerContext.writeAndFlush(new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.INTERNAL_SERVER_ERROR))
           }
         }
       }.failed.foreach {
