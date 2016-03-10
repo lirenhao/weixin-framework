@@ -9,7 +9,7 @@ import scala.language.postfixOps
 import scala.util.Failure
 
 object MyApp extends App {
-  val util = new HttpClient(com.yada.weixin.eventLoopGroup, new URL("http://www.google.com"))
+  val util = new HttpClient(com.yada.weixin.eventLoopGroup, new URL("http://127.0.0.1:8080"))
   val a = new java.util.concurrent.atomic.AtomicInteger(0)
   for (i <- 0 until 100) {
     //    val f = util.get(new URI("/"))
@@ -20,7 +20,7 @@ object MyApp extends App {
     //      case s => println(s)
     //    }
 
-    util.get(new URI("/")).andThen {
+    util.get(new URI("/" + i)).andThen {
       case Failure(e) => e.printStackTrace(); a.incrementAndGet()
     }.foreach { str =>
       a.incrementAndGet()
