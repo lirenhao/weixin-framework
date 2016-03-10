@@ -13,7 +13,8 @@
         <module>comm-util</module>
     </modules>
     <properties>
-        <scala.version>2.11.7</scala.version>
+        <scala.version>2.11.8</scala.version>
+        <netty.version>4.0.34.Final</netty.version>
         <PermGen>64m</PermGen>
         <MaxPermGen>512m</MaxPermGen>
         <CodeCacheSize>512m</CodeCacheSize>
@@ -22,12 +23,12 @@
         <dependency>
             <groupId>org.scala-lang</groupId>
             <artifactId>scala-library</artifactId>
-            <version>2.11.7</version>
+            <version>${scala.version}</version>
         </dependency>
         <dependency>
             <groupId>org.scala-lang</groupId>
             <artifactId>scala-reflect</artifactId>
-            <version>2.11.7</version>
+            <version>${scala.version}</version>
         </dependency>
         <dependency>
             <groupId>org.scalatest</groupId>
@@ -46,7 +47,7 @@
             <dependency>
                 <groupId>io.netty</groupId>
                 <artifactId>netty-all</artifactId>
-                <version>4.0.34.Final</version>
+                <version>${netty.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.typesafe.play</groupId>

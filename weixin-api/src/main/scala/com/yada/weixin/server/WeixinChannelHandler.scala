@@ -23,7 +23,7 @@ import scala.util.Try
 class WeixinChannelHandler extends SimpleChannelInboundHandler[FullHttpRequest] {
   private val token = ConfigFactory.load().getString("weixin.token")
   private val callbackPath = ConfigFactory.load().getString("weixin.callbackPath")
-  private var _f = Future.successful[Any]()
+  private var _f = Future.successful[Any](())
 
   // TODO: 注释 异常的response处理 log
   override def channelRead0(channelHandlerContext: ChannelHandlerContext, i: FullHttpRequest): Unit = {
