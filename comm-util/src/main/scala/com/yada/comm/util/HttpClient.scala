@@ -5,6 +5,7 @@ import java.nio.charset.{Charset, StandardCharsets}
 import java.util.concurrent.LinkedBlockingQueue
 
 import io.netty.bootstrap.Bootstrap
+import io.netty.buffer.Unpooled
 import io.netty.channel._
 import io.netty.channel.socket.SocketChannel
 import io.netty.channel.socket.nio.NioSocketChannel
@@ -34,6 +35,28 @@ class HttpClient(eventLoopGroup: EventLoopGroup, url: URL) {
     channel.pipeline().get(classOf[_Q]).queue.put(promise)
     val request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, uri.toString)
     request.headers().set(HttpHeaders.Names.HOST, url.getHost)
+    request.headers().add(HttpHeaders.Names.CONNECTION, HttpHeaders.Values.KEEP_ALIVE)
+
+    channel.writeAndFlush(request).addListener(new ChannelFutureListener {
+      override def operationComplete(future: ChannelFuture): Unit = {
+        if (!future.isSuccess)
+          promise.failure(future.cause())
+      }
+    })
+    promise.future
+  }
+
+  def post(uri: URI, content: String) = {
+    val promise = Promise[String]
+
+    ensure()
+
+    channel.pipeline().get(classOf[_Q]).queue.put(promise)
+    val request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.POST, uri.toString, Unpooled.copiedBuffer(content, StandardCharsets.UTF_8))
+
+    request.headers().set(HttpHeaders.Names.HOST, url.getHost)
+    request.headers().add(HttpHeaders.Names.CONTENT_TYPE, "text/plain; encoding=utf-8")
+    request.headers().add(HttpHeaders.Names.CONTENT_LENGTH, request.content().readableBytes())
     request.headers().add(HttpHeaders.Names.CONNECTION, HttpHeaders.Values.KEEP_ALIVE)
 
     channel.writeAndFlush(request).addListener(new ChannelFutureListener {
