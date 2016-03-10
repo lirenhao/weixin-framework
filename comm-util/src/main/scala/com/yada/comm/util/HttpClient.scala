@@ -32,7 +32,7 @@ class HttpClient(eventLoopGroup: EventLoopGroup, url: URL) {
 
     ensure()
 
-    channel.pipeline().get(classOf[_Q]).queue.put(promise)
+    channel.pipeline().get(classOf[HttpPipelineHandler]).queue.put(promise)
     val request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, uri.toString)
     request.headers().set(HttpHeaders.Names.HOST, url.getHost)
     request.headers().add(HttpHeaders.Names.CONNECTION, HttpHeaders.Values.KEEP_ALIVE)
@@ -51,7 +51,7 @@ class HttpClient(eventLoopGroup: EventLoopGroup, url: URL) {
 
     ensure()
 
-    channel.pipeline().get(classOf[_Q]).queue.put(promise)
+    channel.pipeline().get(classOf[HttpPipelineHandler]).queue.put(promise)
     val request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.POST, uri.toString, Unpooled.copiedBuffer(content, StandardCharsets.UTF_8))
 
     request.headers().set(HttpHeaders.Names.HOST, url.getHost)
@@ -68,37 +68,35 @@ class HttpClient(eventLoopGroup: EventLoopGroup, url: URL) {
     promise.future
   }
 
-  private trait _Q extends ChannelHandler {
-    val queue: LinkedBlockingQueue[Promise[String]]
+  private class HttpPipelineHandler extends SimpleChannelInboundHandler[FullHttpResponse] {
+    val queue = new LinkedBlockingQueue[Promise[String]](16)
+
+    override def channelRead0(ctx: ChannelHandlerContext, msg: FullHttpResponse): Unit = {
+      val promise = queue.poll()
+      val contentType = msg.headers().get(HttpHeaders.Names.CONTENT_TYPE)
+      val pattern = """.*?encoding\s*=\s*(.*[^;\s]).*""".r
+
+      val encoding = contentType match {
+        case pattern(enc) => Try(Charset.forName(enc)).getOrElse(StandardCharsets.UTF_8)
+        case _ => StandardCharsets.UTF_8
+      }
+
+      val str = msg.content().toString(encoding)
+
+      if (msg.getStatus == HttpResponseStatus.OK)
+        promise.success(str)
+      else
+        promise.failure(new Exception(msg.getStatus + ":" + str))
+
+      if (!HttpHeaders.isKeepAlive(msg))
+        ctx.close()
+    }
   }
 
   private def ensure(): Unit = {
     if (channel == null || !channel.isOpen) {
 
-      val handler = new SimpleChannelInboundHandler[FullHttpResponse] with _Q {
-        val queue = new LinkedBlockingQueue[Promise[String]](16)
-
-        override def channelRead0(ctx: ChannelHandlerContext, msg: FullHttpResponse): Unit = {
-          val promise = queue.poll()
-          val contentType = msg.headers().get(HttpHeaders.Names.CONTENT_TYPE)
-          val pattern = """.*?encoding\s*=\s*(.*[^;\s]).*""".r
-
-          val encoding = contentType match {
-            case pattern(enc) => Try(Charset.forName(enc)).getOrElse(StandardCharsets.UTF_8)
-            case _ => StandardCharsets.UTF_8
-          }
-
-          val str = msg.content().toString(encoding)
-
-          if (msg.getStatus == HttpResponseStatus.OK)
-            promise.success(str)
-          else
-            promise.failure(new Exception(msg.getStatus + ":" + str))
-
-          if (!HttpHeaders.isKeepAlive(msg))
-            ctx.close()
-        }
-      }
+      val handler = new HttpPipelineHandler
 
       channel = new Bootstrap().group(eventLoopGroup)
         .channel(classOf[NioSocketChannel])
