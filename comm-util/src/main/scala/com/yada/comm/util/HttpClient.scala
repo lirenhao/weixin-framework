@@ -29,17 +29,28 @@ class HttpClient(eventLoopGroup: EventLoopGroup, url: URL, capacity: Int = 16) {
 
   private var channel: Channel = null
 
-  def get(uri: URI): Future[String] = {
-    fullLock.increment()
-
-    val promise = Promise[String]
+  def get(uri: URI): Future[String] = write {
     val request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, uri.toString)
 
     request.headers().set(HttpHeaders.Names.HOST, url.getHost)
     request.headers().add(HttpHeaders.Names.CONNECTION, HttpHeaders.Values.KEEP_ALIVE)
+    request
+  }
 
+  def post(uri: URI, content: String) = write {
+    val request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.POST, uri.toString, Unpooled.copiedBuffer(content, StandardCharsets.UTF_8))
+
+    request.headers().set(HttpHeaders.Names.HOST, url.getHost)
+    request.headers().add(HttpHeaders.Names.CONTENT_TYPE, "text/plain; encoding=utf-8")
+    request.headers().add(HttpHeaders.Names.CONTENT_LENGTH, request.content().readableBytes())
+    request.headers().add(HttpHeaders.Names.CONNECTION, HttpHeaders.Values.KEEP_ALIVE)
+    request
+  }
+
+  def write(request: => HttpRequest) = {
+    fullLock.increment()
     ensure()
-
+    val promise = Promise[String]
     channel.writeAndFlush(request).addListener(new ChannelFutureListener {
       override def operationComplete(future: ChannelFuture): Unit = {
         if (future.isSuccess)
@@ -49,30 +60,7 @@ class HttpClient(eventLoopGroup: EventLoopGroup, url: URL, capacity: Int = 16) {
         }
       }
     })
-
     promise.future.andThen { case _ => fullLock.decrement() }
-  }
-
-  def post(uri: URI, content: String) = {
-    val promise = Promise[String]
-
-    ensure()
-
-    channel.pipeline().get(classOf[HttpPipelineHandler]).queue.put(promise)
-    val request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.POST, uri.toString, Unpooled.copiedBuffer(content, StandardCharsets.UTF_8))
-
-    request.headers().set(HttpHeaders.Names.HOST, url.getHost)
-    request.headers().add(HttpHeaders.Names.CONTENT_TYPE, "text/plain; encoding=utf-8")
-    request.headers().add(HttpHeaders.Names.CONTENT_LENGTH, request.content().readableBytes())
-    request.headers().add(HttpHeaders.Names.CONNECTION, HttpHeaders.Values.KEEP_ALIVE)
-
-    channel.writeAndFlush(request).addListener(new ChannelFutureListener {
-      override def operationComplete(future: ChannelFuture): Unit = {
-        if (!future.isSuccess)
-          promise.failure(future.cause())
-      }
-    })
-    promise.future
   }
 
   private class HttpPipelineHandler extends SimpleChannelInboundHandler[FullHttpResponse] {
