@@ -6,7 +6,6 @@ import akka.actor.{Actor, ActorLogging, Props, Status}
 import akka.pattern._
 import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
-import com.yada.comm.util.HttpGetUtil
 import com.yada.weixin._
 
 import scala.concurrent.Future
