@@ -12,14 +12,13 @@ import io.netty.channel.socket.nio.NioSocketChannel
 import io.netty.handler.codec.http._
 import io.netty.handler.ssl.SslContextBuilder
 
-import scala.concurrent.{Future, Promise}
-import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.Try
 
 /**
   * Created by cuitao-pc on 16/3/8.
   */
-class HttpClient(eventLoopGroup: EventLoopGroup, url: URL, capacity: Int = 16) {
+class HttpClient(url: URL, capacity: Int = 16)(implicit ec: ExecutionContext, eventLoopGroup: EventLoopGroup) {
 
   private val protocol = url.getProtocol
   assert(protocol == "http" || protocol == "https")

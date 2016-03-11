@@ -2,14 +2,13 @@ import java.net.{URI, URL}
 import java.util.Date
 
 import com.yada.comm.util.HttpClient
+import com.yada.weixin._
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
 import scala.language.postfixOps
 import scala.util.Failure
 
 object MyApp extends App {
-  val util = new HttpClient(com.yada.weixin.eventLoopGroup, new URL("http://127.0.0.1:8080"))
+  val util = new HttpClient(new URL("http://127.0.0.1:8080"))
   val a = new java.util.concurrent.atomic.AtomicInteger(0)
   for (i <- 0 until 100) {
     //    val f = util.get(new URI("/"))
@@ -35,4 +34,6 @@ object MyApp extends App {
   }
 
   println(new Date())
+  com.yada.weixin.eventLoopGroup.shutdownGracefully()
+  com.yada.weixin.actorSystem.terminate()
 }
