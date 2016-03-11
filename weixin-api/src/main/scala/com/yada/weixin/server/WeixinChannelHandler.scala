@@ -26,51 +26,17 @@ class WeixinChannelHandler extends SimpleChannelInboundHandler[FullHttpRequest] 
   private var _f = Future.successful[Any](())
 
   // TODO: 注释 异常的response处理 log
-  override def channelRead0(channelHandlerContext: ChannelHandlerContext, i: FullHttpRequest): Unit = {
-    val uri = new URI(i.getUri)
-    if (i.getDecoderResult.isSuccess && uri.getPath == callbackPath) {
+  override def channelRead0(channelHandlerContext: ChannelHandlerContext, request: FullHttpRequest): Unit = {
+    val uri = new URI(request.getUri)
+    if (request.getDecoderResult.isSuccess && uri.getPath == callbackPath) {
       Try {
-        if (i.getMethod == HttpMethod.GET) {
-          val queryParam = uri.getQuery.split("&").map {
-            param =>
-              val pv = param.split("=")
-              pv(0) -> (if (pv.length == 1) "" else pv(1))
-          }.toMap
-
-          val signature = queryParam("signature")
-          val timestamp = queryParam("timestamp")
-          val nonce = queryParam("nonce")
-          val echoStr = queryParam("echostr")
-          val signatureStr = List(token, timestamp, nonce).sorted.mkString("")
-          val digest = MessageDigest.getInstance("SHA-1")
-
-          digest.update(signatureStr.getBytes)
-
-          val tmp = Hex.encodeHexString(digest.digest())
-          if (tmp == signature)
-            channelHandlerContext.writeAndFlush(makeResponse(echoStr, i))
-          else
-            channelHandlerContext.close()
-
-        } else if (i.getMethod == HttpMethod.POST) {
-          val msg = i.content().toString(StandardCharsets.UTF_8)
-          val procF = MessageProcActor.procMsg(msg)
-          val timeoutF = after((5 - 1) second, using = actorSystem.scheduler)(Future.failed(new WeixinRequestTimeoutException))
-          val resultF = Future.firstCompletedOf(Seq(procF, timeoutF))
-
-          val tf = for {_ <- _f; msg <- resultF} yield channelHandlerContext.writeAndFlush(makeResponse(msg, i))
-
-          _f = tf.recover {
-            case e: WeixinRequestTimeoutException =>
-              channelHandlerContext.writeAndFlush(makeResponse("success", i)).addListener(new ChannelFutureListener {
-                override def operationComplete(future: ChannelFuture): Unit = {
-                  if (future.isSuccess)
-                    TimeoutMessageProcActor.procMsg(procF)
-                }
-              })
-            case e: Throwable =>
-              channelHandlerContext.writeAndFlush(new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.INTERNAL_SERVER_ERROR))
-          }
+        request.getMethod match {
+          case HttpMethod.GET =>
+            doGet(channelHandlerContext, request, uri)
+          case HttpMethod.POST =>
+            doPost(channelHandlerContext, request)
+          case other =>
+            throw new NoSuchMethodException(other.toString)
         }
       }.failed.foreach {
         e =>
@@ -81,6 +47,55 @@ class WeixinChannelHandler extends SimpleChannelInboundHandler[FullHttpRequest] 
       channelHandlerContext.close()
   }
 
+
+  private def doPost(channelHandlerContext: ChannelHandlerContext, request: FullHttpRequest): Unit = {
+    val msg = request.content().toString(StandardCharsets.UTF_8)
+    val procF = MessageProcActor.procMsg(msg)
+    val timeoutF = after((5 - 1) second, using = actorSystem.scheduler)(Future.failed(new WeixinRequestTimeoutException))
+    val resultF = Future.firstCompletedOf(Seq(procF, timeoutF))
+
+    val tf = for {_ <- _f; msg <- resultF} yield channelHandlerContext.writeAndFlush(makeResponse(msg, request))
+
+    _f = tf.recover {
+      case e: WeixinRequestTimeoutException =>
+        channelHandlerContext.writeAndFlush(makeResponse("success", request)).addListener(new ChannelFutureListener {
+          override def operationComplete(future: ChannelFuture): Unit = {
+            if (future.isSuccess)
+              TimeoutMessageProcActor.procMsg(procF)
+          }
+        })
+      case e: Throwable =>
+        channelHandlerContext.writeAndFlush(new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.INTERNAL_SERVER_ERROR))
+    }
+  }
+
+  private def doGet(channelHandlerContext: ChannelHandlerContext, request: FullHttpRequest, uri: URI): Unit = {
+    val queryParam = uri.getQuery.split("&").map {
+      param =>
+        val pv = param.split("=")
+        pv(0) -> (if (pv.length == 1) "" else pv(1))
+    }.toMap
+
+    val signature = queryParam("signature")
+    val timestamp = queryParam("timestamp")
+    val nonce = queryParam("nonce")
+    val echoStr = queryParam("echostr")
+
+    // 这个微信没有规定时间戳范围, 暂定为5分钟
+    if (math.abs(timestamp.toLong - System.currentTimeMillis()) < 5 * 60) {
+      val signatureStr = List(token, timestamp, nonce).sorted.mkString("")
+      val digest = MessageDigest.getInstance("SHA-1")
+
+      digest.update(signatureStr.getBytes)
+
+      val tmp = Hex.encodeHexString(digest.digest())
+      if (tmp == signature)
+        channelHandlerContext.writeAndFlush(makeResponse(echoStr, request))
+      else
+        channelHandlerContext.close()
+    } else
+      channelHandlerContext.close()
+  }
 
   override def exceptionCaught(ctx: ChannelHandlerContext, cause: Throwable): Unit = super.exceptionCaught(ctx, cause)
 
