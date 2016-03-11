@@ -1,11 +1,12 @@
 package com.yada.weixin.auth.actor
 
-import java.net.URL
+import java.net.{URI, URL}
 
 import akka.actor.{Actor, ActorLogging, Props, Status}
 import akka.pattern._
 import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
+import com.yada.comm.util.HttpClient
 import com.yada.weixin._
 
 import scala.concurrent.Future
@@ -24,8 +25,10 @@ object RefreshServerListCmd
 class ServerListActor extends Actor with ActorLogging {
   private val serverListUrl = {
     val config = ConfigFactory.load()
-    config.getString("weixin.serverListUrl")
+    new URL(config.getString("weixin.serverListUrl"))
   }
+  private val serverListUri = serverListUrl.getPath
+  private val httpClient = HttpClient(serverListUrl)
   private var _future: Future[Seq[String]] = null
 
   override def receive: Receive = {
@@ -45,8 +48,7 @@ class ServerListActor extends Actor with ActorLogging {
     if (_future == null || (_future.isCompleted && _future.value.get.isFailure)) {
       _future = for {
         tokenApiResultStr <- AccessTokenActor.getAccessToken(5 second)
-        serverListApiResultStr <- HttpGetUtil.doGet(
-          new URL(serverListUrl + "?access_token=" + tokenApiResultStr), eventLoopGroup)
+        serverListApiResultStr <- httpClient.get(new URI(serverListUri + "?access_token=" + tokenApiResultStr))
       } yield {
         val result = WeixinApiResult(serverListApiResultStr)
 

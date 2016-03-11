@@ -1,11 +1,12 @@
 package com.yada.weixin.auth.actor
 
-import java.net.URL
+import java.net.{URI, URL}
 
 import akka.actor.{Actor, ActorLogging, Props, Status}
 import akka.pattern._
 import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
+import com.yada.comm.util.HttpClient
 import com.yada.weixin._
 
 import scala.concurrent.Future
@@ -28,6 +29,8 @@ class AccessTokenActor extends Actor with ActorLogging {
     val config = ConfigFactory.load()
     new URL(config.getString("weixin.accessTokenUrl"))
   }
+  private val httpClient = HttpClient(accessTokenUrl)
+  private val accessTokenUri = new URI(accessTokenUrl.getFile)
   private var _future: Future[String] = null
 
   override def receive: Receive = {
@@ -46,7 +49,7 @@ class AccessTokenActor extends Actor with ActorLogging {
 
   def getEffectiveFuture = {
     if (_future == null) {
-      _future = for (tokenApiResultStr <- HttpGetUtil.doGet(accessTokenUrl, eventLoopGroup)) yield {
+      _future = for (tokenApiResultStr <- httpClient.get(accessTokenUri)) yield {
         val result = WeixinApiResult(tokenApiResultStr)
 
         assert(result.isSuccess, "无法获取访问令牌, 微信服务器返回: [" + tokenApiResultStr + "]")

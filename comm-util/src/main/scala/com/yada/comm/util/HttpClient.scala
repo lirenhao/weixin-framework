@@ -100,7 +100,7 @@ class HttpClient(url: URL, capacity: Int = 16)(implicit ec: ExecutionContext, ev
                 val pipeline = ch.pipeline()
                 if (isSsl)
                   pipeline.addLast(sslCtx.newHandler(ch.alloc()))
-                //pipeline.addLast(new LoggingHandler(LogLevel.INFO))
+                //pipeline.addLast(new io.netty.handler.logging.LoggingHandler(io.netty.handler.logging.LogLevel.INFO))
                 pipeline.addLast(new HttpClientCodec).addLast(new HttpObjectAggregator(1024 * 1024))
                   .addLast(handler)
               }
@@ -120,4 +120,9 @@ class HttpClient(url: URL, capacity: Int = 16)(implicit ec: ExecutionContext, ev
       }
     }
   }
+}
+
+object HttpClient {
+  def apply(url: URL)(implicit ec: ExecutionContext, eventLoopGroup: EventLoopGroup) = new HttpClient(url)
+  def apply(url: String)(implicit ec: ExecutionContext, eventLoopGroup: EventLoopGroup) = new HttpClient(new URL(url))
 }
