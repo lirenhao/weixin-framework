@@ -12,6 +12,7 @@ import com.yada.weixin._
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.language.postfixOps
+import scala.util.{Failure, Success}
 
 object GetAccessTokenCmd
 
@@ -37,8 +38,18 @@ class AccessTokenActor extends Actor with ActorLogging {
     case GetAccessTokenCmd =>
       val s = sender()
       val f = getEffectiveFuture
-      for (accessToken <- f) s ! accessToken
-      for (e <- f.failed) s ! Status.Failure(e)
+      if (f.isCompleted) {
+        f.value.foreach {
+          r =>
+            r match {
+              case Success(accessToken) => s ! accessToken
+              case Failure(e) => s ! Status.Failure(e)
+            }
+        }
+      } else {
+        for (accessToken <- f) s ! accessToken
+        for (e <- f.failed) s ! Status.Failure(e)
+      }
     case RefreshAccessTokenCmd =>
       if (_future != null && _future.isCompleted || _future == null) {
         _future = null
