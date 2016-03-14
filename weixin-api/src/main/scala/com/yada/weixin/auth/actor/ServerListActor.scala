@@ -12,6 +12,7 @@ import com.yada.weixin._
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.language.postfixOps
+import scala.util.{Failure, Success}
 
 object GetServerListCmd
 
@@ -38,8 +39,19 @@ class ServerListActor extends Actor with ActorLogging {
     case GetServerListCmd =>
       val s = sender()
       val f = getEffectiveFuture
-      for (list <- f) s ! list
-      for (e <- f.failed) s ! Status.Failure(e)
+
+      if (f.isCompleted) {
+        f.value.foreach {
+          r =>
+            r match {
+              case Success(accessToken) => s ! accessToken
+              case Failure(e) => s ! Status.Failure(e)
+            }
+        }
+      } else {
+        for (list <- f) s ! list
+        for (e <- f.failed) s ! Status.Failure(e)
+      }
   }
 
   private def getEffectiveFuture = {
