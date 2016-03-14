@@ -4,7 +4,7 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import com.yada.comm.util.HttpClient
 import com.yada.weixin._
-import com.yada.weixin.auth.actor.ServerListActor
+import com.yada.weixin.auth.actor.{AccessTokenActor, ServerListActor}
 
 import scala.concurrent.duration._
 import scala.language.postfixOps
@@ -44,7 +44,8 @@ object MyApp extends App {
   }
 
   def serverListTest(): Unit = {
-    val f = ServerListActor.getServerList(5 second)
+    AccessTokenActor.getAccessToken(50 second).foreach(println)
+    val f = ServerListActor.getServerList(50 second)
     f.foreach(_.foreach(println))
     f.failed.foreach(_.printStackTrace())
   }

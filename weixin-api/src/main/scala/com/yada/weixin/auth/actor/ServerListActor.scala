@@ -23,12 +23,10 @@ object RefreshServerListCmd
   * Created by cuitao on 16/3/4.
   */
 class ServerListActor extends Actor with ActorLogging {
-  private val serverListUrl = {
-    val config = ConfigFactory.load()
-    new URL(config.getString("weixin.serverListUrl"))
-  }
-  private val serverListUri = serverListUrl.getPath
-  private val httpClient = HttpClient(serverListUrl)
+  private val config = ConfigFactory.load()
+  private val apiUrl = new URL(config.getString("weixin.apiUrl"))
+  private val serverListUri = config.getString("weixin.serverListUri")
+  private val httpClient = HttpClient(apiUrl)
   private var _future: Future[Seq[String]] = null
 
   override def receive: Receive = {

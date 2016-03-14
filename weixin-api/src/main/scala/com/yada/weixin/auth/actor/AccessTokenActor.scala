@@ -25,12 +25,11 @@ object RefreshAccessTokenCmd
   * Created by cuitao on 16/3/4.
   */
 class AccessTokenActor extends Actor with ActorLogging {
-  private val accessTokenUrl = {
-    val config = ConfigFactory.load()
-    new URL(config.getString("weixin.accessTokenUrl"))
-  }
-  private val httpClient = HttpClient(accessTokenUrl)
-  private val accessTokenUri = new URI(accessTokenUrl.getFile)
+  private val config = ConfigFactory.load()
+
+  private val apiUrl = new URL(config.getString("weixin.apiUrl"))
+  private val httpClient = HttpClient(apiUrl)
+  private val accessTokenUri = new URI(config.getString("weixin.accessTokenUri"))
   private var _future: Future[String] = null
 
   override def receive: Receive = {
