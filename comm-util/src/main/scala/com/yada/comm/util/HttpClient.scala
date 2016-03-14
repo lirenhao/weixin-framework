@@ -13,7 +13,7 @@ import io.netty.handler.codec.http._
 import io.netty.handler.ssl.SslContextBuilder
 
 import scala.concurrent.{ExecutionContext, Future, Promise}
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 /**
   * Created by cuitao-pc on 16/3/8.
@@ -48,18 +48,26 @@ class HttpClient(url: URL, capacity: Int = 16)(implicit ec: ExecutionContext, ev
 
   def write(request: => HttpRequest) = {
     fullLock.increment()
-    ensure()
-    val promise = Promise[String]
-    channel.writeAndFlush(request).addListener(new ChannelFutureListener {
-      override def operationComplete(future: ChannelFuture): Unit = {
-        if (future.isSuccess)
-          channel.pipeline().get(classOf[HttpPipelineHandler]).queue.put(promise)
-        else {
-          promise.failure(future.cause())
+
+    Try {
+      ensure()
+      val promise = Promise[String]
+      channel.writeAndFlush(request).addListener(new ChannelFutureListener {
+        override def operationComplete(future: ChannelFuture): Unit = {
+          if (future.isSuccess)
+            channel.pipeline().get(classOf[HttpPipelineHandler]).queue.put(promise)
+          else {
+            promise.failure(future.cause())
+          }
         }
-      }
-    })
-    promise.future.andThen { case _ => fullLock.decrement() }
+      })
+      promise.future.andThen { case _ => fullLock.decrement() }
+    } match {
+      case Success(f) => f
+      case Failure(e) =>
+        fullLock.decrement()
+        Future.failed(e)
+    }
   }
 
   private class HttpPipelineHandler extends SimpleChannelInboundHandler[FullHttpResponse] {
@@ -124,5 +132,6 @@ class HttpClient(url: URL, capacity: Int = 16)(implicit ec: ExecutionContext, ev
 
 object HttpClient {
   def apply(url: URL)(implicit ec: ExecutionContext, eventLoopGroup: EventLoopGroup) = new HttpClient(url)
+
   def apply(url: String)(implicit ec: ExecutionContext, eventLoopGroup: EventLoopGroup) = new HttpClient(new URL(url))
 }
