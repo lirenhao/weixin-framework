@@ -1,4 +1,4 @@
-package com.yada.weixin.server
+package com.yada.weixin.cb.server
 
 import java.net.URI
 import java.nio.charset.StandardCharsets

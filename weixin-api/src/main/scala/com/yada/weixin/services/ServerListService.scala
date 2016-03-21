@@ -1,4 +1,4 @@
-package com.yada.weixin.auth.actor
+package com.yada.weixin.services
 
 import java.net.{URI, URL}
 

@@ -1,4 +1,4 @@
-package com.yada.weixin.server
+package com.yada.weixin.cb.server
 
 import akka.actor.{Actor, Props}
 import akka.pattern._
@@ -14,7 +14,7 @@ import scala.language.postfixOps
   * Created by cuitao on 2016/3/6.
   */
 class MessageProcActor extends Actor {
-  private val messageProc = Class.forName(ConfigFactory.load().getString("weixin.messageProcClass"))
+  private val messageProc = Class.forName(ConfigFactory.load().getString("weixin.callbackServer.messageProcClass"))
     .newInstance().asInstanceOf[MessageProc]
   override def receive: Receive = {
     case msg: String =>

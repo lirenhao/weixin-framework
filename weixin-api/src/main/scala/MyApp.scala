@@ -4,7 +4,7 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import com.yada.comm.util.HttpClient
 import com.yada.weixin._
-import com.yada.weixin.auth.actor.{AccessTokenActor, ServerListActor}
+import com.yada.weixin.services.{AccessTokenActor, ServerListActor}
 
 import scala.concurrent.duration._
 import scala.language.postfixOps

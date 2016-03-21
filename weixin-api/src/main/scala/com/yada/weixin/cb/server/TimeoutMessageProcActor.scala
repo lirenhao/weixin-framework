@@ -1,4 +1,4 @@
-package com.yada.weixin.server
+package com.yada.weixin.cb.server
 
 import akka.actor.{Actor, Props}
 import com.typesafe.config.ConfigFactory
@@ -10,7 +10,7 @@ import scala.concurrent.Future
   * Created by Cuitao on 2016/3/6.
   */
 class TimeoutMessageProcActor extends Actor {
-  private val timeoutMessageProc = Class.forName(ConfigFactory.load().getString("weixin.timeoutMessageProcClass"))
+  private val timeoutMessageProc = Class.forName(ConfigFactory.load().getString("weixin.callbackServer.timeoutMessageProcClass"))
     .newInstance().asInstanceOf[TimeoutMessageProc]
 
   override def receive: Receive = {

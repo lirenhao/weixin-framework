@@ -1,5 +1,6 @@
-package com.yada.weixin.server
+package com.yada.weixin.cb.server
 
+import com.typesafe.config.ConfigFactory
 import io.netty.bootstrap.ServerBootstrap
 import io.netty.channel.nio.NioEventLoopGroup
 import io.netty.channel.socket.SocketChannel
@@ -14,7 +15,7 @@ import io.netty.handler.logging.{LogLevel, LoggingHandler}
 object WeixinCallbackServer {
 
   def start() = {
-    val port = 80
+    val port = ConfigFactory.load().getInt("weixin.callbackServer.port")
     val ip = "0.0.0.0"
 
     val bossGroup = new NioEventLoopGroup(1)
