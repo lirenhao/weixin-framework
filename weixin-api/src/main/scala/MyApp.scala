@@ -50,5 +50,5 @@ object MyApp extends App {
     f.failed.foreach(_.printStackTrace())
   }
 
-  serverListTest()
+  //serverListTest()
 }

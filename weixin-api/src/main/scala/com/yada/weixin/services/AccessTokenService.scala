@@ -39,11 +39,8 @@ class AccessTokenActor extends Actor with ActorLogging {
       val f = getEffectiveFuture
       if (f.isCompleted) {
         f.value.foreach {
-          r =>
-            r match {
-              case Success(accessToken) => s ! accessToken
-              case Failure(e) => s ! Status.Failure(e)
-            }
+          case Success(accessToken) => s ! accessToken
+          case Failure(e) => s ! Status.Failure(e)
         }
       } else {
         for (accessToken <- f) s ! accessToken

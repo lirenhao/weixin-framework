@@ -6,11 +6,13 @@ import java.security.MessageDigest
 
 import akka.pattern._
 import com.typesafe.config.ConfigFactory
+import com.typesafe.scalalogging.LazyLogging
 import com.yada.weixin._
 import io.netty.buffer.Unpooled
 import io.netty.channel.{ChannelFuture, ChannelFutureListener, ChannelHandlerContext, SimpleChannelInboundHandler}
 import io.netty.handler.codec.http._
 import org.apache.commons.codec.binary.Hex
+import org.slf4j.LoggerFactory
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -20,12 +22,11 @@ import scala.util.Try
 /**
   * Created by cuitao on 16/3/4.
   */
-class WeixinChannelHandler extends SimpleChannelInboundHandler[FullHttpRequest] {
+class WeixinChannelHandler extends SimpleChannelInboundHandler[FullHttpRequest] with LazyLogging {
   private val token = ConfigFactory.load().getString("weixin.token")
   private val callbackPath = ConfigFactory.load().getString("weixin.callbackPath")
   private var _f = Future.successful[Any](())
 
-  // TODO: 注释 异常的response处理 log
   override def channelRead0(channelHandlerContext: ChannelHandlerContext, request: FullHttpRequest): Unit = {
     val uri = new URI(request.getUri)
     if (request.getDecoderResult.isSuccess && uri.getPath == callbackPath) {
@@ -40,13 +41,14 @@ class WeixinChannelHandler extends SimpleChannelInboundHandler[FullHttpRequest] 
         }
       }.failed.foreach {
         e =>
-          e.printStackTrace()
+          logger.error("channelRead0异常, 关闭信道[" + channelHandlerContext.channel().remoteAddress() + "]", e)
           channelHandlerContext.close()
       }
-    } else
+    } else {
+      logger.warn("无效请求uri: uri = [" + uri + "], 关闭信道[" + channelHandlerContext.channel().remoteAddress() + "]")
       channelHandlerContext.close()
+    }
   }
-
 
   private def doPost(channelHandlerContext: ChannelHandlerContext, request: FullHttpRequest): Unit = {
     val msg = request.content().toString(StandardCharsets.UTF_8)
@@ -58,6 +60,7 @@ class WeixinChannelHandler extends SimpleChannelInboundHandler[FullHttpRequest] 
 
     _f = tf.recover {
       case e: WeixinRequestTimeoutException =>
+        logger.warn("消息处理超时: msg = [" + msg + "]")
         channelHandlerContext.writeAndFlush(makeResponse("success", request)).addListener(new ChannelFutureListener {
           override def operationComplete(future: ChannelFuture): Unit = {
             if (future.isSuccess)
@@ -65,6 +68,7 @@ class WeixinChannelHandler extends SimpleChannelInboundHandler[FullHttpRequest] 
           }
         })
       case e: Throwable =>
+        logger.error("其他内部异常", e)
         channelHandlerContext.writeAndFlush(new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.INTERNAL_SERVER_ERROR))
     }
   }
@@ -91,10 +95,14 @@ class WeixinChannelHandler extends SimpleChannelInboundHandler[FullHttpRequest] 
       val tmp = Hex.encodeHexString(digest.digest())
       if (tmp == signature)
         channelHandlerContext.writeAndFlush(makeResponse(echoStr, request))
-      else
+      else {
+        logger.warn("验签失败")
         channelHandlerContext.close()
-    } else
+      }
+    } else {
+      logger.warn("签名时间戳无效")
       channelHandlerContext.close()
+    }
   }
 
   override def exceptionCaught(ctx: ChannelHandlerContext, cause: Throwable): Unit = super.exceptionCaught(ctx, cause)
