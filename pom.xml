@@ -92,6 +92,11 @@
                 <artifactId>commons-codec</artifactId>
                 <version>1.10</version>
             </dependency>
+            <dependency>
+                <groupId>org.scala-lang.modules</groupId>
+                <artifactId>scala-xml_2.11</artifactId>
+                <version>1.0.5</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
     <build>
