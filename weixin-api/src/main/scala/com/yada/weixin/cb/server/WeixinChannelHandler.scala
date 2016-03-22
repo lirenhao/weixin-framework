@@ -105,7 +105,7 @@ class WeixinChannelHandler extends SimpleChannelInboundHandler[FullHttpRequest] 
     }
   }
 
-  override def exceptionCaught(ctx: ChannelHandlerContext, cause: Throwable): Unit = super.exceptionCaught(ctx, cause)
+  override def exceptionCaught(ctx: ChannelHandlerContext, cause: Throwable): Unit = logger.error("netty异常", cause)
 
   private def makeResponse(msg: String, req: FullHttpRequest) = {
     val buf = Unpooled.copiedBuffer(msg, StandardCharsets.UTF_8)
