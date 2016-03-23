@@ -56,12 +56,12 @@ class WeixinChannelHandler extends SimpleChannelInboundHandler[FullHttpRequest] 
     val timeoutF = after((5 - 1) second, using = actorSystem.scheduler)(Future.failed(new WeixinRequestTimeoutException))
     val resultF = Future.firstCompletedOf(Seq(procF, timeoutF))
 
-    val tf = for {_ <- _f; msg <- resultF} yield channelHandlerContext.writeAndFlush(makeResponse(msg, request))
+    val tf = for {_ <- _f; msg <- resultF} yield write(channelHandlerContext, makeResponse(msg, request))
 
     _f = tf.recover {
       case e: WeixinRequestTimeoutException =>
         logger.warn("消息处理超时: msg = [" + msg + "]")
-        channelHandlerContext.writeAndFlush(makeResponse("success", request)).addListener(new ChannelFutureListener {
+        write(channelHandlerContext, makeResponse("success", request)).addListener(new ChannelFutureListener {
           override def operationComplete(future: ChannelFuture): Unit = {
             if (future.isSuccess)
               TimeoutMessageProcActor.procMsg(procF)
@@ -69,7 +69,7 @@ class WeixinChannelHandler extends SimpleChannelInboundHandler[FullHttpRequest] 
         })
       case e: Throwable =>
         logger.error("其他内部异常", e)
-        channelHandlerContext.writeAndFlush(new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.INTERNAL_SERVER_ERROR))
+        write(channelHandlerContext, new DefaultFullHttpResponse(request.getProtocolVersion, HttpResponseStatus.INTERNAL_SERVER_ERROR))
     }
   }
 
@@ -94,7 +94,7 @@ class WeixinChannelHandler extends SimpleChannelInboundHandler[FullHttpRequest] 
 
       val tmp = Hex.encodeHexString(digest.digest())
       if (tmp == signature)
-        channelHandlerContext.writeAndFlush(makeResponse(echoStr, request))
+        write(channelHandlerContext, makeResponse(echoStr, request))
       else {
         logger.warn("验签失败")
         channelHandlerContext.close()
@@ -105,11 +105,17 @@ class WeixinChannelHandler extends SimpleChannelInboundHandler[FullHttpRequest] 
     }
   }
 
+  def write(channelHandlerContext: ChannelHandlerContext, response: FullHttpResponse) = {
+    val f = channelHandlerContext.writeAndFlush(response)
+    if (!HttpHeaders.isKeepAlive(response)) f.addListener(ChannelFutureListener.CLOSE)
+    f
+  }
+
   override def exceptionCaught(ctx: ChannelHandlerContext, cause: Throwable): Unit = logger.error("netty异常", cause)
 
   private def makeResponse(msg: String, req: FullHttpRequest) = {
     val buf = Unpooled.copiedBuffer(msg, StandardCharsets.UTF_8)
-    val resp = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK, buf)
+    val resp = new DefaultFullHttpResponse(req.getProtocolVersion, HttpResponseStatus.OK, buf)
     resp.headers().add(HttpHeaders.Names.CONTENT_TYPE, "text/plain; encoding=utf-8")
     resp.headers().add(HttpHeaders.Names.CONTENT_LENGTH, resp.content().readableBytes())
     if (HttpHeaders.isKeepAlive(req))
