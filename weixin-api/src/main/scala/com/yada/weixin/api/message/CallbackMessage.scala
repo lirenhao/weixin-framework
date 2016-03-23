@@ -1,5 +1,6 @@
 package com.yada.weixin.api.message
 
+import scala.util.Try
 import scala.xml.XML
 
 /**
@@ -60,11 +61,16 @@ object CallbackMessage {
 
   trait Message {
     val commMessage: CommMessage
-    def ToUserName = "ToUserName"
-    def FromUserName = "FromUserName"
-    def CreateTime = "CreateTime"
-    def MsgType = "MsgType"
-    def MsgId = "MsgId"
+
+    def toUserName = commMessage.toUserName
+
+    def fromUserName = commMessage.fromUserName
+
+    def createTime = commMessage.createTime
+
+    def msgType = commMessage.msgType
+
+    def msgId = commMessage.msgId
   }
 
   /**
@@ -180,7 +186,7 @@ object CallbackMessage {
                           Url: String
                         ) extends Message
 
-  def strToMessage(strMsg: String): Message = {
+  def strToMessage(strMsg: String): Try[Message] = Try {
     val xml = XML.loadString(strMsg)
     val comm = CommMessage(
       (xml \ Names.Comm.ToUserName).head.text,

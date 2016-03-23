@@ -22,6 +22,7 @@ class MessageProcActor extends Actor {
   }
 }
 
+// TODO: 超时时间? 如何设置或读取? 当前是1秒
 object MessageProcActor {
   private val actor = com.yada.weixin.actorSystem.actorOf(Props[MessageProcActor], "MessageProcActor")
   private implicit val timeout = Timeout(1 second)
