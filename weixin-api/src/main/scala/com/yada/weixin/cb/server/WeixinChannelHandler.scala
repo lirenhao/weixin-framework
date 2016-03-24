@@ -24,7 +24,7 @@ import scala.util.Try
   */
 class WeixinChannelHandler extends SimpleChannelInboundHandler[FullHttpRequest] with LazyLogging {
   private val token = ConfigFactory.load().getString("weixin.token")
-  private val callbackPath = ConfigFactory.load().getString("weixin.callbackPath")
+  private val callbackPath = ConfigFactory.load().getString("weixin.callbackServer.callbackPath")
   private var _f = Future.successful[Any](())
 
   override def channelRead0(channelHandlerContext: ChannelHandlerContext, request: FullHttpRequest): Unit = {

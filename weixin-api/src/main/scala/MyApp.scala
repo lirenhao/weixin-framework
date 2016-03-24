@@ -4,6 +4,7 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import com.yada.comm.util.HttpClient
 import com.yada.weixin._
+import com.yada.weixin.cb.server.WeixinCallbackServer
 import com.yada.weixin.services.{AccessTokenActor, ServerListActor}
 
 import scala.concurrent.duration._
@@ -50,5 +51,10 @@ object MyApp extends App {
     f.failed.foreach(_.printStackTrace())
   }
 
+  def startServer(): Unit = {
+    WeixinCallbackServer.start()
+  }
   //serverListTest()
+
+  startServer()
 }
