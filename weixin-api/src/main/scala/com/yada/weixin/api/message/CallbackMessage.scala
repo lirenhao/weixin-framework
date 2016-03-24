@@ -153,6 +153,137 @@ object CallbackMessage {
       * 发送失败的粉丝数
       */
     final val ErrorCount = "ErrorCount"
+    /**
+      * 有效期
+      */
+    final val ExpiredTime = "ExpiredTime"
+    /**
+      * FailTime
+      */
+    final val FailTime = "FailTime"
+    /**
+      * 认证失败的原因
+      */
+    final val FailReason = "FailReason"
+
+    /**
+      * 卡券ID
+      */
+    final val CardId = "CardId"
+    /**
+      * 卡券Code码
+      */
+    final val UserCardCode = "UserCardCode"
+    final val OutTradeNo = "OutTradeNo"
+    /**
+      * 微信支付交易订单号
+      */
+    final val TranId = "TranId"
+    /**
+      * 门店名称，当前卡券核销的门店名称
+      */
+    final val LocationName = "LocationName"
+    /**
+      * 实付金额，单位为分
+      */
+    final val Fee = "Fee"
+    /**
+      * 应付金额，单位为分
+      */
+    final val OriginalFee = "OriginalFee"
+    final val IsGiveByFriend = "IsGiveByFriend"
+    /**
+      * 场景ID
+      */
+    final val OuterId = "OuterId"
+    /**
+      * 核销来源
+      */
+    final val ConsumeSource = "ConsumeSource"
+    /**
+      * 核销该卡券核销员的openid
+      */
+    final val StaffOpenId = "StaffOpenId"
+    /**
+      * 变动的积分值
+      */
+    final val ModifyBonus = "ModifyBonus"
+    /**
+      * 变动的余额值
+      */
+    final val ModifyBalance = "ModifyBalance"
+    /**
+      * 明细
+      */
+    final val Detail = "Detail"
+    /**
+      * 购买券点时，实际支付成功的时间
+      */
+    final val PayFinishTime = "PayFinishTime"
+    /**
+      * 支付方式，一般为微信支付充值
+      */
+    final val Desc = "Desc"
+    /**
+      * 剩余免费券点数量
+      */
+    final val FreeCoinCount = "FreeCoinCount"
+    /**
+      * 剩余付费券点数量
+      */
+    final val PayCoinCount = "PayCoinCount"
+    /**
+      * 本次变动的免费券点数量
+      */
+    final val RefundFreeCoinCount = "RefundFreeCoinCount"
+    /**
+      * 本次变动的付费券点数量
+      */
+    final val RefundPayCoinCount = "RefundPayCoinCount"
+    /**
+      * 所要拉取的订单类型
+      */
+    final val OrderType = "OrderType"
+    /**
+      * 系统备注，说明此次变动的缘由，如开通账户奖励、门店奖励、核销奖励以及充值、扣减。
+      */
+    final val Memo = "Memo"
+    /**
+      * 所开发票的详情
+      */
+    final val ReceiptInfo = "ReceiptInfo"
+    /**
+      * 子商户ID
+      */
+    final val MerchantId = "MerchantId"
+    /**
+      * 是否通过，为1时审核通过
+      */
+    final val IsPass = "IsPass"
+    /**
+      * 子商户账号的AppID
+      */
+    final val SubMerchantAppId = "SubMerchantAppId"
+    /**
+      * 商户自己内部ID，即字段中的sid
+      */
+    final val UniqId = "UniqId"
+    /**
+      * 微信的门店ID，微信内门店唯一标示ID
+      */
+    final val PoiId = "PoiId"
+    /**
+      * 审核结果，成功succ 或失败fail
+      */
+    final val Result = "Result"
+    /**
+      * 成功的通知信息，或审核失败的驳回理由
+      */
+    final val Msg = "Msg"
+    /**
+      * 客服账号
+      */
+    final val KfAccount = "KfAccount"
 
     object MSG_TYPE {
       final val Text = "text"
@@ -163,6 +294,7 @@ object CallbackMessage {
       final val Location = "location"
       final val link = "link"
       final val Event = "event"
+      final val TransferCustomerService = "transfer_customer_service"
     }
 
     object EVENT_TYPE {
@@ -173,48 +305,129 @@ object CallbackMessage {
       final val Click = "CLICK"
       final val View = "VIEW"
       final val MassSendJobFinish = "MASSSENDJOBFINISH"
+      final val TemplateSendJobFinish = "TEMPLATESENDJOBFINISH"
+      final val QualificationVerifySuccess = "qualification_verify_success"
+      final val QualificationVerifyFail = "qualification_verify_fail"
+      final val NamingVerifySuccess = "naming_verify_success"
+      final val NamingVerifyFail = "naming_verify_fail"
+      final val AnnualRenew = "annual_renew"
+      final val VerifyExpired = "verify_expired"
+      final val UserPayFromPayCell = "user_pay_from_pay_cell"
+      final val CardPassCheck = "card_pass_check"
+      final val CardNotPassCheck = "card_not_pass_check"
+      final val UserGetCard = "user_get_card"
+      final val UserDelCard = "user_del_card"
+      final val UserConsumeCard = "user_consume_card"
+      final val UserViewCard = "user_view_card"
+      final val UserEnterSessionFromCard = "user_enter_session_from_card"
+      final val UpdateMemberCard = "update_member_card"
+      /**
+        * 子商户审核事件
+        */
+      final val SubmitMemberCardUserInfo = "submit_membercard_user_info"
+      final val CardMerchantAuthCheckResult = "card_merchant_auth_check_result"
+      final val CardMerchantCheckResult = "card_merchant_check_result"
+      /**
+        * 库存报警
+        */
+      final val CardSkuRemind = "card_sku_remind"
+      final val PoiCheckNotify = "poi_check_notify"
     }
 
     object STATUS {
+      final val OrderSuccess = "ORDER_STATUS_FINANCE_SUCC"
+      final val Success = "success"
+      final val UserBlock = "failed:user block"
+      final val SystemFailed = "failed: system failed"
       final val SendSuccess = "send success"
       final val SendFail = "send fail"
       /**
         * 涉嫌广告
         */
-      final val err_10001 = "err(10001)"
+      final val Err_10001 = "err(10001)"
       /**
         * 涉嫌政治
         */
-      final val err_20001 = "err(20001)"
+      final val Err_20001 = "err(20001)"
       /**
         * 涉嫌色情
         */
-      final val err_20002 = "err(20002)"
+      final val Err_20002 = "err(20002)"
       /**
         * 涉嫌社会
         */
-      final val err_20004 = "err(20004)"
+      final val Err_20004 = "err(20004)"
       /**
         * 涉嫌违法犯罪
         */
-      final val err_20006 = "err(20006)"
+      final val Err_20006 = "err(20006)"
       /**
         * 涉嫌欺诈
         */
-      final val err_20008 = "err(20008)"
+      final val Err_20008 = "err(20008)"
       /**
         * 涉嫌版权
         */
-      final val err_20013 = "err(20013)"
+      final val Err_20013 = "err(20013)"
       /**
         * 涉嫌其他
         */
-      final val err_21000 = "err(21000)"
+      final val Err_21000 = "err(21000)"
       /**
         * 涉嫌互推(互相宣传)
         */
-      final val err_22000 = "err(22000)"
+      final val Err_22000 = "err(22000)"
     }
+
+    /**
+      * 订单类型
+      */
+    object ORDER_TYPE {
+      /**
+        * 平台赠送券点
+        */
+      final val OrderTypeSysAdd = "ORDER_TYPE_SYS_ADD"
+      /**
+        * 充值券点
+        */
+      final val OrderTypeWxPay = "ORDER_TYPE_WXPAY"
+      /**
+        * 库存未使用回退券点
+        */
+      final val OrderTypeRefund = "ORDER_TYPE_REFUND"
+      /**
+        * 券点兑换库存
+        */
+      final val OrderTypeReduce = "ORDER_TYPE_REDUCE"
+      /**
+        * 平台扣减
+        */
+      final val OrderTypeSysReduce = "ORDER_TYPE_SYS_REDUCE"
+    }
+
+    /**
+      * 核销来源
+      */
+    object CONSUME_SOURCE {
+      /**
+        * 支持开发者统计API核销
+        */
+      final val FromAPI = "FROM_API"
+      /**
+        * 公众平台核销
+        */
+      final val FromMP = "FROM_MP"
+      /**
+        * 卡券商户助手核销
+        */
+      final val FromMobileHelper = "FROM_MOBILE_HELPER"
+    }
+
+    object RESULT {
+      final val Success = "succ"
+      final val Failure = "fail"
+    }
+
   }
 
 }
