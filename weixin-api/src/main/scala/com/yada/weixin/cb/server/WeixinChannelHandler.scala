@@ -84,9 +84,8 @@ class WeixinChannelHandler extends SimpleChannelInboundHandler[FullHttpRequest] 
     val nonce = queryParam("nonce")
     val echoStr = queryParam("echostr")
 
-    println(timestamp)
     // 这个微信没有规定时间戳范围, 暂定为5分钟
-    if (math.abs(timestamp.toLong - System.currentTimeMillis() / 1000) < 5 * 60) {
+    if (math.abs(timestamp.toLong - System.currentTimeMillis() / 1000) < 15) {
       val signatureStr = List(token, timestamp, nonce).sorted.mkString("")
       val digest = MessageDigest.getInstance("SHA-1")
 
