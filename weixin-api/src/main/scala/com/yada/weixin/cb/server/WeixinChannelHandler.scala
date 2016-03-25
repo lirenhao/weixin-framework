@@ -12,7 +12,6 @@ import io.netty.buffer.Unpooled
 import io.netty.channel.{ChannelFuture, ChannelFutureListener, ChannelHandlerContext, SimpleChannelInboundHandler}
 import io.netty.handler.codec.http._
 import org.apache.commons.codec.binary.Hex
-import org.slf4j.LoggerFactory
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
