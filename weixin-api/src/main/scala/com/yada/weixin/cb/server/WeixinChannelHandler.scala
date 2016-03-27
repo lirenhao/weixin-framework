@@ -28,22 +28,38 @@ class WeixinChannelHandler extends SimpleChannelInboundHandler[FullHttpRequest] 
 
   override def channelRead0(channelHandlerContext: ChannelHandlerContext, request: FullHttpRequest): Unit = {
     val uri = new URI(request.getUri)
-    if (request.getDecoderResult.isSuccess && uri.getPath == callbackPath) {
+    if (request.getDecoderResult.isSuccess && uri.getPath == callbackPath)
       Try {
-        request.getMethod match {
-          case HttpMethod.GET =>
-            doGet(channelHandlerContext, request, uri)
-          case HttpMethod.POST =>
-            doPost(channelHandlerContext, request)
-          case other =>
-            throw new NoSuchMethodException(other.toString)
+        val queryParam = uri.getQuery.split("&").map {
+          param =>
+            val pv = param.split("=")
+            pv(0) -> (if (pv.length == 1) "" else pv(1))
+        }.toMap
+
+        val signature = queryParam.getOrElse("signature", "")
+        val timestamp = queryParam.getOrElse("timestamp", "")
+        val nonce = queryParam.getOrElse("nonce", "")
+        val echoStr = queryParam.getOrElse("echostr", "")
+
+        if (verify(signature, timestamp, nonce)) {
+          request.getMethod match {
+            case HttpMethod.GET =>
+              write(channelHandlerContext, makeResponse(echoStr, request))
+            case HttpMethod.POST =>
+              doPost(channelHandlerContext, request)
+            case other =>
+              throw new NoSuchMethodException(other.toString)
+          }
+        } else {
+          logger.warn("无效签名, 关闭信道[" + channelHandlerContext.channel().remoteAddress() + "]")
+          channelHandlerContext.close()
         }
       }.failed.foreach {
         e =>
           logger.error("channelRead0异常, 关闭信道[" + channelHandlerContext.channel().remoteAddress() + "]", e)
           channelHandlerContext.close()
-      }
-    } else {
+
+      } else {
       logger.warn("无效请求uri: uri = [" + uri + "], 关闭信道[" + channelHandlerContext.channel().remoteAddress() + "]")
       channelHandlerContext.close()
     }
@@ -72,36 +88,16 @@ class WeixinChannelHandler extends SimpleChannelInboundHandler[FullHttpRequest] 
     }
   }
 
-  private def doGet(channelHandlerContext: ChannelHandlerContext, request: FullHttpRequest, uri: URI): Unit = {
-    val queryParam = uri.getQuery.split("&").map {
-      param =>
-        val pv = param.split("=")
-        pv(0) -> (if (pv.length == 1) "" else pv(1))
-    }.toMap
-
-    val signature = queryParam("signature")
-    val timestamp = queryParam("timestamp")
-    val nonce = queryParam("nonce")
-    val echoStr = queryParam("echostr")
-
+  def verify(signature: String, timestamp: String, nonce: String) = {
     // 这个微信没有规定时间戳范围, 暂定为5分钟
     if (math.abs(timestamp.toLong - System.currentTimeMillis() / 1000) < 15) {
       val signatureStr = List(token, timestamp, nonce).sorted.mkString("")
       val digest = MessageDigest.getInstance("SHA-1")
-
       digest.update(signatureStr.getBytes)
-
       val tmp = Hex.encodeHexString(digest.digest())
-      if (tmp == signature)
-        write(channelHandlerContext, makeResponse(echoStr, request))
-      else {
-        logger.warn("验签失败")
-        channelHandlerContext.close()
-      }
-    } else {
-      logger.warn("签名时间戳无效")
-      channelHandlerContext.close()
-    }
+      tmp == signature
+    } else
+      false
   }
 
   def write(channelHandlerContext: ChannelHandlerContext, response: FullHttpResponse) = {
