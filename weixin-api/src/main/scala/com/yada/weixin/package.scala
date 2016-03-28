@@ -2,13 +2,15 @@ package com.yada
 
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
+import java.security.MessageDigest
 import java.util.concurrent.ForkJoinPool
 import javax.crypto.Cipher
 import javax.crypto.spec.{IvParameterSpec, SecretKeySpec}
 
 import akka.actor.ActorSystem
+import com.typesafe.config.ConfigFactory
 import io.netty.channel.nio.NioEventLoopGroup
-import org.apache.commons.codec.binary.Base64
+import org.apache.commons.codec.binary.{Base64, Hex}
 
 import scala.concurrent.ExecutionContext
 import scala.util.Random
@@ -54,5 +56,19 @@ package object weixin {
       val length = content.getInt
       new String(content.array(), 16, length, encoding)
     }
+  }
+
+  class WeixinSignature(token: String) {
+    val digest = MessageDigest.getInstance("SHA-1")
+
+    def verify(signature: String, timestamp: String, nonce: String) = {
+      val signatureStr = Array(token, timestamp, nonce).sorted.mkString("")
+      val digest = MessageDigest.getInstance("SHA-1")
+      digest.update(signatureStr.getBytes)
+      val tmp = Hex.encodeHexString(digest.digest())
+      tmp == signature
+    }
+
+    def checkTimestamp(timestamp: String) = math.abs(timestamp.toLong - System.currentTimeMillis() / 1000) < 15
   }
 }
