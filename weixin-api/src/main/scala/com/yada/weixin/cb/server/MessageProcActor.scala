@@ -24,13 +24,12 @@ class MessageProcActor extends Actor {
   }
 }
 
-// TODO: 超时时间? 如何设置或读取? 当前是1秒
 object MessageProcActor {
   private val actor = com.yada.weixin.actorSystem.actorOf(
     Props[MessageProcActor].withRouter(RoundRobinPool(Runtime.getRuntime.availableProcessors() * 2)),
     "MessageProcActor")
 
-  private implicit val timeout = Timeout(1 second)
+  private implicit val timeout = Timeout(1 day)
 
   def procMsg(msg: String) = (actor ? msg).asInstanceOf[Future[Future[String]]].flatMap(f => f)
 }
