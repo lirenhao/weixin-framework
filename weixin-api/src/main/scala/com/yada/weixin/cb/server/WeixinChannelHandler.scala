@@ -23,6 +23,7 @@ import scala.util.Try
   */
 class WeixinChannelHandler extends SimpleChannelInboundHandler[FullHttpRequest] with LazyLogging {
   private val token = ConfigFactory.load().getString("weixin.token")
+  private val weixinSignature = new WeixinSignature(token)
   private val callbackPath = ConfigFactory.load().getString("weixin.callbackServer.callbackPath")
   private var _f = Future.successful[Any](())
 
@@ -37,11 +38,17 @@ class WeixinChannelHandler extends SimpleChannelInboundHandler[FullHttpRequest] 
         }.toMap
 
         val signature = queryParam.getOrElse("signature", "")
-        val timestamp = queryParam.getOrElse("timestamp", "")
+        val timestamp = queryParam.getOrElse("timestamp", "0")
         val nonce = queryParam.getOrElse("nonce", "")
         val echoStr = queryParam.getOrElse("echostr", "")
 
-        if (verify(signature, timestamp, nonce)) {
+        if (!weixinSignature.checkTimestamp(timestamp)) {
+          logger.warn("无效时间戳, 关闭信道[" + channelHandlerContext.channel().remoteAddress() + "]")
+          channelHandlerContext.close()
+        } else if (!weixinSignature.verify(signature, timestamp, nonce)) {
+          logger.warn("无效签名, 关闭信道[" + channelHandlerContext.channel().remoteAddress() + "]")
+          channelHandlerContext.close()
+        } else {
           request.getMethod match {
             case HttpMethod.GET =>
               write(channelHandlerContext, makeResponse(echoStr, request))
@@ -50,9 +57,6 @@ class WeixinChannelHandler extends SimpleChannelInboundHandler[FullHttpRequest] 
             case other =>
               throw new NoSuchMethodException(other.toString)
           }
-        } else {
-          logger.warn("无效签名, 关闭信道[" + channelHandlerContext.channel().remoteAddress() + "]")
-          channelHandlerContext.close()
         }
       }.failed.foreach {
         e =>
@@ -67,6 +71,7 @@ class WeixinChannelHandler extends SimpleChannelInboundHandler[FullHttpRequest] 
 
   private def doPost(channelHandlerContext: ChannelHandlerContext, request: FullHttpRequest): Unit = {
     val msg = request.content().toString(StandardCharsets.UTF_8)
+    println(msg)
     val procF = MessageProcActor.procMsg(msg)
     val timeoutF = after((5 - 1) second, using = actorSystem.scheduler)(Future.failed(new WeixinRequestTimeoutException))
     val resultF = Future.firstCompletedOf(Seq(procF, timeoutF))
@@ -86,18 +91,6 @@ class WeixinChannelHandler extends SimpleChannelInboundHandler[FullHttpRequest] 
         logger.error("其他内部异常", e)
         write(channelHandlerContext, new DefaultFullHttpResponse(request.getProtocolVersion, HttpResponseStatus.INTERNAL_SERVER_ERROR))
     }
-  }
-
-  def verify(signature: String, timestamp: String, nonce: String) = {
-    // 这个微信没有规定时间戳范围, 暂定为5分钟
-    if (math.abs(timestamp.toLong - System.currentTimeMillis() / 1000) < 15) {
-      val signatureStr = List(token, timestamp, nonce).sorted.mkString("")
-      val digest = MessageDigest.getInstance("SHA-1")
-      digest.update(signatureStr.getBytes)
-      val tmp = Hex.encodeHexString(digest.digest())
-      tmp == signature
-    } else
-      false
   }
 
   def write(channelHandlerContext: ChannelHandlerContext, response: FullHttpResponse) = {
