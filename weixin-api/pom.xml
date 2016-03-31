@@ -37,6 +37,10 @@
             <groupId>io.netty</groupId>
             <artifactId>netty-all</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.eclipsesource.j2v8</groupId>
+            <artifactId>j2v8_${os}_${arch}</artifactId>
+        </dependency>
     </dependencies>
 
     <build>
