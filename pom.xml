@@ -21,6 +21,34 @@
         <MaxPermGen>512m</MaxPermGen>
         <CodeCacheSize>512m</CodeCacheSize>
     </properties>
+
+    <profiles>
+        <profile>
+            <id>macosx</id>
+            <properties>
+                <os>macosx</os>
+                <arch>x86_64</arch>
+                <j2v8.version>3.1.6</j2v8.version>
+            </properties>
+        </profile>
+        <profile>
+            <id>win32_64</id>
+            <properties>
+                <os>win32</os>
+                <arch>x86_64</arch>
+                <j2v8.version>3.1.6</j2v8.version>
+            </properties>
+        </profile>
+        <profile>
+            <id>win32</id>
+            <properties>
+                <os>win32</os>
+                <arch>x86</arch>
+                <j2v8.version>3.1.6</j2v8.version>
+            </properties>
+        </profile>
+    </profiles>
+
     <dependencies>
         <!-- scala -->
         <dependency>
@@ -96,6 +124,11 @@
                 <groupId>org.scala-lang.modules</groupId>
                 <artifactId>scala-xml_2.11</artifactId>
                 <version>1.0.5</version>
+            </dependency>
+            <dependency>
+                <groupId>com.eclipsesource.j2v8</groupId>
+                <artifactId>j2v8_${os}_${arch}</artifactId>
+                <version>${j2v8.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
