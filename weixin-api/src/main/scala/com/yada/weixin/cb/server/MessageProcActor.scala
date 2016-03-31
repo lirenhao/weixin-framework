@@ -26,7 +26,7 @@ class MessageProcActor extends Actor {
 
 object MessageProcActor {
   private val actor = com.yada.weixin.actorSystem.actorOf(
-    Props[MessageProcActor].withRouter(RoundRobinPool(Runtime.getRuntime.availableProcessors() * 2)),
+    Props[MessageProcActor].withRouter(RoundRobinPool(Runtime.getRuntime.availableProcessors())),
     "MessageProcActor")
 
   private implicit val timeout = Timeout(1 day)
