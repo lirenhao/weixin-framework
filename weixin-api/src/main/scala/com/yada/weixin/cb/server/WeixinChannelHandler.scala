@@ -15,7 +15,6 @@ import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.language.postfixOps
 import scala.util.Try
-import scala.xml.{PCData, Utility}
 
 /**
   * Created by cuitao on 16/3/4.
@@ -97,24 +96,18 @@ class WeixinChannelHandler extends SimpleChannelInboundHandler[FullHttpRequest] 
           val encryptMsg = WeixinCrypt().encrypt(msg)
           val timestamp = (System.currentTimeMillis() / 1000).toString
           val signature = WeixinSignature().sign(timestamp, nonce, encryptMsg)
-          Utility.trim {
-            <xml>
-              <Encrypt>
-                {PCData(encryptMsg)}
-              </Encrypt>
-              <MsgSignature>
-                {PCData(signature)}
-              </MsgSignature>
-              <TimeStamp>
-                {timestamp}
-              </TimeStamp>
-              <Nonce>
-                {PCData(nonce)}
-              </Nonce>
-            </xml>
-          }.toString()
+          new StringBuffer().append("<xml><Encrypt><![CDATA[")
+            .append(encryptMsg)
+            .append("]]></Encrypt><MsgSignature><![CDATA[")
+            .append(signature)
+            .append("]]></MsgSignature><TimeStamp>")
+            .append(timestamp)
+            .append("</TimeStamp><Nonce><![CDATA[")
+            .append(nonce)
+            .append("]]></Nonce></xml>").toString
         } else
           msg
+
         write(channelHandlerContext, makeResponse(tm, request))
       }
 
