@@ -1,6 +1,6 @@
 package com.yada.weixin.cb.server
 
-import akka.actor.{Actor, Props}
+import akka.actor.{Actor, Props, Status}
 import akka.pattern._
 import akka.routing.RoundRobinPool
 import akka.util.Timeout
@@ -10,6 +10,7 @@ import com.yada.weixin.weixinExecutionContext
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.language.postfixOps
+import scala.util.{Failure, Success, Try}
 
 /**
   * Created by cuitao on 2016/3/6.
@@ -20,7 +21,10 @@ class MessageProcActor extends Actor {
 
   override def receive: Receive = {
     case msg: String =>
-      sender() ! messageProc.proc(msg)
+      Try (messageProc.proc(msg)) match {
+        case Success(f) => sender() ! f
+        case Failure(e) => sender() ! Status.Failure(e)
+      }
   }
 }
 

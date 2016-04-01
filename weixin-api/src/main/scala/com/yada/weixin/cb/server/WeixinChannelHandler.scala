@@ -128,7 +128,7 @@ class WeixinChannelHandler extends SimpleChannelInboundHandler[FullHttpRequest] 
             }
           })
         case e: Throwable =>
-          logger.error("其他内部异常", e)
+          logger.error("其他内部异常: msg = [" + msg + "]", e)
           write(channelHandlerContext, new DefaultFullHttpResponse(request.getProtocolVersion, HttpResponseStatus.INTERNAL_SERVER_ERROR))
       }
     }

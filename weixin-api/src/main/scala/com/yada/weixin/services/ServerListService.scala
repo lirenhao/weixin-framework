@@ -42,11 +42,8 @@ class ServerListActor extends Actor with ActorLogging {
 
       if (f.isCompleted) {
         f.value.foreach {
-          r =>
-            r match {
-              case Success(accessToken) => s ! accessToken
-              case Failure(e) => s ! Status.Failure(e)
-            }
+          case Success(accessToken) => s ! accessToken
+          case Failure(e) => s ! Status.Failure(e)
         }
       } else {
         for (list <- f) s ! list
