@@ -22,7 +22,7 @@ import scala.util.Try
 class WeixinChannelHandler extends SimpleChannelInboundHandler[FullHttpRequest] with LazyLogging {
   private val weixinSignature = WeixinSignature()
   private val callbackPath = ConfigFactory.load().getString("weixin.callbackServer.callbackPath")
-  private val isEncrypt = ConfigFactory.load().getBoolean("weixin.encrypt")
+  private val isEncrypt = ConfigFactory.load().getInt("weixin.encryption") == 1
   private var _f = Future.successful[Any](())
 
   override def channelRead0(channelHandlerContext: ChannelHandlerContext, request: FullHttpRequest): Unit = {
