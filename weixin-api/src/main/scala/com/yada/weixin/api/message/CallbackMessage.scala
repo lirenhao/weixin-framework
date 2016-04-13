@@ -297,6 +297,8 @@ object CallbackMessage {
       final val TransferCustomerService = "transfer_customer_service"
     }
 
+
+
     object EVENT_TYPE {
       final val Subscribe = "subscribe"
       final val UnSubscribe = "unsubscribe"
