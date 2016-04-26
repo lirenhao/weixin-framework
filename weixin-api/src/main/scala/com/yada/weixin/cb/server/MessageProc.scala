@@ -4,6 +4,7 @@ import com.yada.weixin.api.message.CallbackMessage
 import play.api.libs.json.{JsValue, Json}
 
 import scala.concurrent.Future
+import com.yada.weixin._
 
 /**
   * Created by Cuitao on 2016/3/6.

@@ -21,7 +21,7 @@ import collection.JavaConverters._
 class MessageProcActor extends Actor {
   private val messageProcList = ConfigFactory.load().getStringList("weixin.callbackServer.messageProcClasses").asScala.map {
     className =>
-      Class.forName(className).newInstance().asInstanceOf[MessageProc]
+      Class.forName(className).newInstance().asInstanceOf[MessageProc[_, _]]
   }
 
   override def receive: Receive = {
