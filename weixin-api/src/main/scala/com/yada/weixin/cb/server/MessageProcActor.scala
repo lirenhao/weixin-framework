@@ -30,7 +30,7 @@ class MessageProcActor extends Actor {
         val jv = (Json.parse(XML.toJSONObject(msg).toString()) \ "xml").as[JsValue]
         messageProcList.find(mp => mp.filter(jv)) match {
           case Some(mp) => mp.proc(jv) {
-            case Some(responseJv) => XML.toString(JSONObject.stringToValue(responseJv.toString()), "xml")
+            case Some(responseJv) => XML.toString(new JSONObject(responseJv.toString()), "xml")
             case None => "success"
           }
           case None => Future.successful("success")
