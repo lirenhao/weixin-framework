@@ -41,6 +41,14 @@
             <groupId>com.eclipsesource.j2v8</groupId>
             <artifactId>j2v8_${os}_${arch}</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.json</groupId>
+            <artifactId>json</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.scala-lang.modules</groupId>
+            <artifactId>scala-java8-compat_2.11</artifactId>
+        </dependency>
     </dependencies>
 
     <build>
