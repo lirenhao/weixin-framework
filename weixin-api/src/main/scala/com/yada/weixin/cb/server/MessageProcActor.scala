@@ -6,7 +6,7 @@ import akka.routing.RoundRobinPool
 import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
 import com.yada.weixin.weixinExecutionContext
-import org.json.XML
+import org.json.{JSONObject, XML}
 import play.api.libs.json.{JsValue, Json}
 
 import scala.concurrent.Future
@@ -30,7 +30,7 @@ class MessageProcActor extends Actor {
         val jv = (Json.parse(XML.toJSONObject(msg).toString()) \ "xml").as[JsValue]
         messageProcList.find(mp => mp.filter(jv)) match {
           case Some(mp) => mp.proc(jv) {
-            case Some(responseJv) => responseJv.toString()
+            case Some(responseJv) => XML.toString(JSONObject.stringToValue(responseJv.toString()), "xml")
             case None => "success"
           }
           case None => Future.successful("success")
